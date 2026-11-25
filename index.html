@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>index</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root{--bg:#f6f7f9;--card:#fff;--tx:#1b2330;--mu:#5b6677;--bd:#dde1e8;--ac:#2563eb;--ac2:#f59e0b;--ac3:#10b981;--ac4:#ef4444;--gr:#e5e8ee;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#10141b;--card:#1a212c;--tx:#e8ecf2;--mu:#9aa5b5;--bd:#2c3644;--ac:#6ea0ff;--ac2:#fbbf24;--ac3:#34d399;--ac4:#f87171;--gr:#2c3644;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#10141b;--card:#1a212c;--tx:#e8ecf2;--mu:#9aa5b5;--bd:#2c3644;--ac:#6ea0ff;--ac2:#fbbf24;--ac3:#34d399;--ac4:#f87171;--gr:#2c3644;color-scheme:dark}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+main{max-width:1000px;margin:0 auto;padding:20px 16px 48px}
+h1{font-size:22px;margin:0 0 4px}h2{font-size:16px;margin:0 0 10px}p.s{color:var(--mu);margin:0 0 16px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:16px;margin-bottom:16px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}
+label{display:block;font-size:13px;color:var(--mu);margin-bottom:4px}
+input,select{width:100%;padding:8px 10px;border:1px solid var(--bd);border-radius:8px;background:var(--bg);color:var(--tx);font:inherit}
+small{color:var(--mu);font-size:12px}
+button{background:var(--ac);color:#fff;border:0;border-radius:8px;padding:10px 20px;font:inherit;font-weight:600;cursor:pointer}
+button:disabled{opacity:.5;cursor:wait}button.g{background:transparent;color:var(--ac);border:1px solid var(--ac)}
+.bar{height:8px;background:var(--gr);border-radius:4px;overflow:hidden;margin-top:12px}.bar i{display:block;height:100%;width:0;background:var(--ac);transition:width .2s}
+#st{font-size:13px;color:var(--mu);margin-top:6px;min-height:18px}
+.charts{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}
+.cw{position:relative;height:260px}
+.tw{overflow-x:auto}table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{padding:6px 10px;border-bottom:1px solid var(--bd);text-align:right;white-space:nowrap}th:first-child,td:first-child{text-align:left}th{color:var(--mu);font-weight:600}
+pre{margin:0;background:var(--bg);border:1px solid var(--bd);border-radius:8px;padding:12px;overflow-x:auto;font:13px/1.5 ui-monospace,Menlo,Consolas,monospace}
+.k{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:16px}
+.k div{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:10px 12px}.k b{display:block;font-size:22px}.k span{font-size:12px;color:var(--mu)}
+.hid{display:none}.ok{color:var(--ac3);font-weight:600}
+</style></head><body><main>
+<h1>Ex 2 – Cache-Aware Data Structures &amp; Memory Utilisation</h1>
+<p class="s">Enter the parameters, run the four experiments in your browser, and see the timings, memory footprint, ideal-cache analysis and charts. Each test is repeated <i>r</i> times and the minimum time is reported.</p>
+
+<div class="card"><h2>Inputs</h2>
+<div class="grid">
+<div><label for="n">Matrix size n (n × n, float64)</label><input id="n" type="number" value="2048" min="64" max="4096" step="64"><small>Manual uses 4096 (128 MB); 2048 is faster</small></div>
+<div><label for="tiles">Tile sizes (comma separated)</label><input id="tiles" value="8,16,32,64,128,256"><small>Manual: 16, 64, 256</small></div>
+<div><label for="N">Sensor records N (AoS vs SoA)</label><input id="N" type="number" value="500000" min="1000" max="3000000" step="1000"></div>
+<div><label for="M">Linked-list length M</label><input id="M" type="number" value="1000000" min="1000" max="3000000" step="1000"></div>
+<div><label for="r">Repeats r</label><input id="r" type="number" value="3" min="1" max="10"></div>
+<div><label for="cache">Cache size C (KB)</label><input id="cache" type="number" value="32" min="4" max="65536"><small>e.g. L1 = 32 KB, L2 = 256–1024 KB</small></div>
+<div><label for="line">Cache line B (bytes)</label><select id="line"><option>32</option><option selected>64</option><option>128</option></select></div>
+</div>
+<div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap"><button id="run">▶ Run experiments</button><button id="reset" class="g">Reset defaults</button></div>
+<div class="bar"><i id="pb"></i></div><div id="st"></div></div>
+
+<div id="out" class="hid">
+<div class="k" id="kpi"></div>
+<div class="card"><h2>Console output</h2><pre id="log"></pre></div>
+<div class="card"><h2>Results tables</h2><div class="tw" id="tbl"></div></div>
+<div class="card"><h2>Graphical analysis</h2><div class="charts">
+<div><div class="cw"><canvas id="c1"></canvas></div></div>
+<div><div class="cw"><canvas id="c2"></canvas></div></div>
+<div><div class="cw"><canvas id="c3"></canvas></div></div>
+<div><div class="cw"><canvas id="c4"></canvas></div></div></div></div>
+<div class="card"><h2>Ideal-cache model &amp; analysis</h2><div id="ana"></div></div>
+</div>
+
+<div class="card"><h2>About the experiment</h2><small>(i) Row-major vs column-major traversal of a C-order matrix; (ii) naive vs cache-blocked (tiled) transpose; (iii) Array-of-Structures (JS objects) vs Structure-of-Arrays (typed arrays) for memory and scan time; (iv) pointer chasing in a randomly permuted linked list vs a contiguous array scan. The original lab used Python/NumPy; this version uses JavaScript typed arrays, so absolute times differ but the cache effects are the same. Results vary with the browser, device and CPU load.</small></div>
+
+<script>
+const $=id=>document.getElementById(id);
+const DEF={n:2048,tiles:"8,16,32,64,128,256",N:500000,M:1000000,r:3,cache:32,line:64};
+const tick=()=>new Promise(r=>setTimeout(r,0));
+function best(fn,r){let b=1e9,v;for(let k=0;k<r;k++){const t=performance.now();v=fn();b=Math.min(b,performance.now()-t)}return[b,v]}
+let charts=[];
+function mk(id,cfg){const c=new Chart($(id),cfg);charts.push(c);return c}
+function col(n){return getComputedStyle(document.documentElement).getPropertyValue(n).trim()}
+function opts(title,yt,log){const t=col('--tx'),g=col('--gr');return{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},title:{display:true,text:title,color:t}},scales:{x:{ticks:{color:t},grid:{color:g}},y:{type:log?'logarithmic':'linear',title:{display:true,text:yt,color:t},ticks:{color:t},grid:{color:g},beginAtZero:!log}}}}
+const f=(x,d=1)=>x.toFixed(d);
+
+async function run(){
+ const btn=$('run');btn.disabled=true;
+ const n=Math.max(64,Math.min(4096,+$('n').value|0)),r=Math.max(1,+$('r').value|0),N=+$('N').value|0,M=+$('M').value|0;
+ const tiles=$('tiles').value.split(',').map(s=>+s.trim()).filter(x=>x>0&&x<=n);
+ const Ckb=+$('cache').value,Bb=+$('line').value;
+ if(!tiles.length){alert('Enter at least one valid tile size (≤ n).');btn.disabled=false;return}
+ const log=[],set=(p,m)=>{$('pb').style.width=p+'%';$('st').textContent=m},R={};
+ const P=s=>log.push(s);
+ try{
+ set(3,'Allocating matrix…');await tick();
+ const A=new Float64Array(n*n);for(let i=0;i<A.length;i++)A[i]=Math.random();
+ // 1 traversal
+ set(8,'[1] Row vs column traversal…');await tick();
+ const rowF=()=>{let s=0;for(let i=0;i<n;i++){const o=i*n;for(let j=0;j<n;j++)s+=A[o+j]}return s};
+ const colF=()=>{let s=0;for(let j=0;j<n;j++)for(let i=0;i<n;i++)s+=A[i*n+j];return s};
+ const[rt,rs]=best(rowF,r);await tick();const[ct,cs]=best(colF,r);
+ R.row=rt;R.colt=ct;R.sumOK=Math.abs(rs-cs)<1e-6*Math.abs(rs);
+ // 2 transpose
+ set(30,'[2] Naive transpose…');await tick();
+ const B=new Float64Array(n*n);
+ const naive=()=>{for(let i=0;i<n;i++)for(let j=0;j<n;j++)B[j*n+i]=A[i*n+j]};
+ const[tn]=best(naive,r);
+ let okT=true;for(let k=0;k<50;k++){const i=(Math.random()*n)|0,j=(Math.random()*n)|0;if(B[j*n+i]!==A[i*n+j])okT=false}
+ R.tn=tn;R.tiles=[];
+ for(let t=0;t<tiles.length;t++){const b=tiles[t];set(30+t*(25/tiles.length),`[2] Blocked transpose, tile=${b}…`);await tick();
+  B.fill(0);
+  const blk=()=>{for(let ii=0;ii<n;ii+=b)for(let jj=0;jj<n;jj+=b){const ie=Math.min(ii+b,n),je=Math.min(jj+b,n);for(let i=ii;i<ie;i++)for(let j=jj;j<je;j++)B[j*n+i]=A[i*n+j]}};
+  const[tb]=best(blk,r);
+  for(let k=0;k<50;k++){const i=(Math.random()*n)|0,j=(Math.random()*n)|0;if(B[j*n+i]!==A[i*n+j])okT=false}
+  R.tiles.push({b,t:tb})}
+ R.okT=okT;
+ // 3 AoS vs SoA
+ set(58,'[3] AoS vs SoA…');await tick();
+ const hm=()=>performance.memory?performance.memory.usedJSHeapSize:null;
+ let m0=hm();
+ let aos=new Array(N);for(let i=0;i<N;i++)aos[i]={id:i,temp:20+Math.random()*20,humidity:30+Math.random()*60};
+ let m1=hm();
+ const ids=new Int32Array(N),tp=new Float64Array(N),hu=new Float64Array(N);
+ for(let i=0;i<N;i++){ids[i]=aos[i].id;tp[i]=aos[i].temp;hu[i]=aos[i].humidity}
+ const modelAoS=N*(16+3*8+2*16+8)/1048576, modelSoA=N*(4+8+8)/1048576;
+ R.memMeasured=(m0!=null&&m1!=null&&m1>m0)?(m1-m0)/1048576:null;
+ R.mAoS=R.memMeasured??modelAoS;R.mSoA=modelSoA;R.memSrc=R.memMeasured!=null?'heap measured (Chrome) / SoA exact':'model estimate / SoA exact';
+ R.modelAoS=modelAoS;
+ const[ta,sa]=best(()=>{let s=0;for(let i=0;i<N;i++)s+=aos[i].temp;return s},r);
+ const[ts,ss]=best(()=>{let s=0;for(let i=0;i<N;i++)s+=tp[i];return s},r);
+ R.ta=ta;R.ts=ts;R.aosOK=Math.abs(sa-ss)<1e-6*Math.abs(sa);
+ // 4 linked list
+ set(75,'[4] Building linked list…');await tick();
+ const perm=new Int32Array(M);for(let i=0;i<M;i++)perm[i]=i;
+ for(let i=M-1;i>0;i--){const j=(Math.random()*(i+1))|0;const t=perm[i];perm[i]=perm[j];perm[j]=t}
+ const nodes=new Array(M);for(let i=0;i<M;i++)nodes[i]={v:i,nxt:null};
+ for(let i=0;i<M-1;i++)nodes[perm[i]].nxt=nodes[perm[i+1]];
+ const head=nodes[perm[0]];
+ set(88,'[4] Pointer chasing…');await tick();
+ const[tl,sl]=best(()=>{let s=0,x=head;while(x){s+=x.v;x=x.nxt}return s},r);
+ const arr=new Float64Array(M);for(let i=0;i<M;i++)arr[i]=i;
+ const[tr,sr]=best(()=>{let s=0;for(let i=0;i<M;i++)s+=arr[i];return s},r);
+ R.tl=tl;R.tr=tr;R.llOK=sl===sr;
+ set(100,'Done ✔');
+ }catch(e){set(0,'Error: '+e.message+' — try smaller sizes.');btn.disabled=false;return}
+
+ // ---- output ----
+ const bt=R.tiles.reduce((a,b)=>a.t<b.t?a:b);
+ const sl=R.colt/R.row,lineElems=Bb/8,Cb=Ckb*1024,bOpt=Math.floor(Math.sqrt(Cb/16));
+ const bOptP2=2**Math.floor(Math.log2(bOpt));
+ P('CACHE-AWARE DATA STRUCTURES - locality and memory analysis');P('='.repeat(62));
+ P(`[1] ${n}x${n} float64 matrix (${f(n*n*8/1048576,0)} MB), C-order`);
+ P(` Row-wise traversal    : ${f(R.row,1).padStart(8)} ms`);
+ P(` Column-wise traversal : ${f(R.colt,1).padStart(8)} ms (slowdown x${f(sl,2)})`);
+ P(`\n[2] Matrix transpose ${n}x${n}`);P(` Naive (row->column) : ${f(R.tn,1).padStart(8)} ms`);
+ R.tiles.forEach(x=>P(` Blocked (tile=${String(x.b).padStart(3)}) : ${f(x.t,1).padStart(8)} ms  speed-up x${f(R.tn/x.t,2)}`));
+ P(`\n[3] ${N.toLocaleString()} sensor readings: AoS vs SoA`);
+ P(` AoS (objects) memory : ${f(R.mAoS,2).padStart(8)} MB  avg-temp scan ${f(R.ta,2).padStart(7)} ms`);
+ P(` SoA (packed) memory  : ${f(R.mSoA,2).padStart(8)} MB  avg-temp scan ${f(R.ts,2).padStart(7)} ms`);
+ P(` Memory saving : ${f(100*(1-R.mSoA/R.mAoS),1)} %   [AoS: ${R.memSrc}]`);
+ P(`\n[4] Sum of ${M.toLocaleString()} numbers`);
+ P(` Linked list (random addresses) : ${f(R.tl,1).padStart(8)} ms`);
+ P(` Contiguous Float64 array       : ${f(R.tr,2).padStart(8)} ms  (x${f(R.tl/R.tr,1)} faster)`);
+ P(`\nVerification: traversal sums ${R.sumOK?'equal':'DIFFER'}, transpose ${R.okT?'correct':'WRONG'}, AoS/SoA sums ${R.aosOK?'equal':'DIFFER'}, list/array sums ${R.llOK?'equal':'DIFFER'}`);
+ $('log').textContent=log.join('\n');
+ $('kpi').innerHTML=[[`×${f(sl,1)}`,'column vs row slowdown'],[`×${f(R.tn/bt.t,1)}`,`best tiling speed-up (b=${bt.b})`],[`${f(100*(1-R.mSoA/R.mAoS),0)}%`,'memory saved by SoA'],[`×${f(R.tl/R.tr,0)}`,'array vs linked list']].map(a=>`<div><b>${a[0]}</b><span>${a[1]}</span></div>`).join('');
+ let t='<table><tr><th>Experiment</th><th>Variant</th><th>Time (ms)</th><th>Memory (MB)</th><th>Ratio</th></tr>';
+ t+=`<tr><td>1 Traversal</td><td>Row-wise</td><td>${f(R.row)}</td><td>–</td><td>1.00×</td></tr><tr><td></td><td>Column-wise</td><td>${f(R.colt)}</td><td>–</td><td>${f(sl,2)}× slower</td></tr>`;
+ t+=`<tr><td>2 Transpose</td><td>Naive</td><td>${f(R.tn)}</td><td>–</td><td>1.00×</td></tr>`+R.tiles.map(x=>`<tr><td></td><td>Tile ${x.b}${x===bt?' ★':''}</td><td>${f(x.t)}</td><td>–</td><td>${f(R.tn/x.t,2)}× faster</td></tr>`).join('');
+ t+=`<tr><td>3 Layout</td><td>AoS (objects)</td><td>${f(R.ta,2)}</td><td>${f(R.mAoS,2)}</td><td>1.00×</td></tr><tr><td></td><td>SoA (typed arrays)</td><td>${f(R.ts,2)}</td><td>${f(R.mSoA,2)}</td><td>${f(R.ta/R.ts,1)}× faster</td></tr>`;
+ t+=`<tr><td>4 Scan</td><td>Linked list</td><td>${f(R.tl)}</td><td>–</td><td>1.00×</td></tr><tr><td></td><td>Contiguous array</td><td>${f(R.tr,2)}</td><td>–</td><td>${f(R.tl/R.tr,1)}× faster</td></tr></table>`;
+ $('tbl').innerHTML=t;
+ const missRow=n*n/lineElems,missCol=n*n;
+ $('ana').innerHTML=`<p><b>Ideal-cache model</b> (line B = ${Bb} bytes = ${lineElems} doubles, cache C = ${Ckb} KB):</p><ul>
+<li><b>Row-wise scan:</b> n²/B = ${missRow.toExponential(2)} cache-line transfers. <b>Column-wise:</b> up to n² = ${missCol.toExponential(2)} (about ${lineElems}× more), because each access touches a new line. Measured slowdown: <b>×${f(sl,2)}</b>.</li>
+<li><b>Optimal tile:</b> two b×b tiles of 8-byte values must fit in cache, 2·b²·8 ≤ C, so b ≤ √(C/16) = <b>${bOpt}</b> (power of two: <b>${bOptP2}</b>). Fastest tested tile: <b>${bt.b}</b> (${f(bt.t)} ms, ×${f(R.tn/bt.t,2)} vs naive). Tiny tiles add loop overhead; huge tiles (${Math.max(...tiles)}×${Math.max(...tiles)} = ${f(Math.pow(Math.max(...tiles),2)*8/1024,0)} KB) no longer fit, giving a U-shaped curve.</li>
+<li><b>Layout:</b> SoA uses ${f(R.mSoA,2)} MB vs ${f(R.mAoS,2)} MB for AoS (${f(100*(1-R.mSoA/R.mAoS),1)}% saving) as it stores raw values with no object headers or pointers, and scans ×${f(R.ta/R.ts,1)} faster, with n/B line transfers for a sequential scan.</li>
+<li><b>Pointer chasing:</b> every node is a dependent random access (~1 cache miss each, no prefetching), so the linked list is ×${f(R.tl/R.tr,1)} slower than the contiguous array.</li></ul>
+<p><small>Conclusion: cache-aware layouts and access patterns change running time by an order of magnitude or more without changing asymptotic complexity.</small></p>`;
+ $('out').classList.remove('hid');
+ charts.forEach(c=>c.destroy());charts=[];
+ const a1=col('--ac'),a2=col('--ac2'),a3=col('--ac3'),a4=col('--ac4');
+ mk('c1',{type:'bar',data:{labels:['Row-wise','Column-wise'],datasets:[{data:[R.row,R.colt],backgroundColor:[a3,a4]}]},options:opts('1. Traversal time','ms')});
+ mk('c2',{type:'line',data:{labels:['Naive',...R.tiles.map(x=>'b='+x.b)],datasets:[{data:[R.tn,...R.tiles.map(x=>x.t)],borderColor:a1,backgroundColor:a1,tension:.25,pointRadius:5}]},options:opts('2. Transpose time vs tile size','ms')});
+ mk('c3',{type:'bar',data:{labels:['AoS','SoA'],datasets:[{label:'Memory (MB)',data:[R.mAoS,R.mSoA],backgroundColor:[a4,a3]}]},options:opts('3a. Memory footprint','MB')});
+ mk('c4',{type:'bar',data:{labels:['AoS scan','SoA scan','Linked list','Array scan'],datasets:[{data:[R.ta,R.ts,R.tl,R.tr],backgroundColor:[a4,a3,a2,a1]}]},options:opts('3b/4. Scan time (log scale)','ms',true)});
+ btn.disabled=false;$('out').scrollIntoView({behavior:'smooth'});
+}
+$('run').onclick=run;
+$('reset').onclick=()=>{for(const k in DEF)$(k).value=DEF[k]};
+</script></main></body></html>
